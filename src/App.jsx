@@ -11,10 +11,7 @@ export default function App() {
         {/* Upload X-ray Image */}
         <UploadSection />
         
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Original X-ray */}
-          <ClassificationOutput type="original" />
-          
+        <div className="mt-8 gap-6">
           {/* Grad-CAM Visualization */}
           <ClassificationOutput type="gradcam" />
         </div>
