@@ -8,7 +8,7 @@ from torchvision import transforms
 from collections import OrderedDict
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-MODEL_PATH = "resnet50-baseline-nodule.pth"
+MODEL_PATH = "best_wsod_resnet50.pth"
 CLASS_NAMES = ["No Nodule", "Nodule Detected"]
 
 # ============================================================
