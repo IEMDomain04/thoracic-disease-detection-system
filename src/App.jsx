@@ -1,19 +1,37 @@
+import { useState } from 'react';
 import { Header } from './components/Header';
 import { UploadSection } from './components/UploadSection';
 import { ClassificationOutput } from './components/ClassificationOutput';
 
 export default function App() {
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [prediction, setPrediction] = useState(null);
+  const [loading, setLoading] = useState(false);
+
   return (
     <div className="min-h-screen [background-color:#1F2937] flex flex-col">
       <Header />
       
       <main className="container mx-auto px-4 py-8">
         {/* Upload X-ray Image */}
-        <UploadSection />
+        <UploadSection 
+          selectedFile={selectedFile}
+          setSelectedFile={setSelectedFile}
+          previewUrl={previewUrl}
+          setPreviewUrl={setPreviewUrl}
+          prediction={prediction}
+          setPrediction={setPrediction}
+          loading={loading}
+          setLoading={setLoading}
+        />
         
         <div className="mt-8 gap-6">
-          {/* Grad-CAM Visualization */}
-          <ClassificationOutput type="gradcam" />
+          {/* Classification Results */}
+          <ClassificationOutput 
+            imageSrc={previewUrl}
+            prediction={prediction}
+          />
         </div>
       </main>
 
