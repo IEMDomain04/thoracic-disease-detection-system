@@ -67,6 +67,11 @@ export function UploadSection({
 
       const result = await response.json();
       setPrediction(result);
+      
+      // Update preview with backend-generated image if available
+      if (result.preview_image) {
+        setPreviewUrl(result.preview_image);
+      }
     } catch (err) {
       setError("Prediction failed. Please try again.");
     } finally {

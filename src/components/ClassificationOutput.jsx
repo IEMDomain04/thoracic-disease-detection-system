@@ -7,6 +7,9 @@ export function ClassificationOutput({ imageSrc, prediction }) {
   const predictedClass = prediction?.prediction || prediction?.class || '--';
   const confidence = prediction?.confidence != null ? Number(prediction.confidence) : null;
 
+  // Use backend preview image if available, otherwise fall back to imageSrc
+  const displayImage = prediction?.preview_image || imageSrc;
+
   // Normalize confidence to percentage (handle both 0-1 and 0-100 formats)
   // Keep a numeric value for clamping and a formatted string with 2 decimals
   const confPercentNumber = confidence != null
@@ -75,9 +78,9 @@ export function ClassificationOutput({ imageSrc, prediction }) {
         
         {/* Image Display Area */}
         <div className="relative w-full max-w-4xl aspect-[4/3] bg-[#111827] rounded-lg border border-[#374151] flex items-center justify-center mb-6 overflow-hidden">
-          {imageSrc ? (
+          {displayImage ? (
             <img 
-              src={imageSrc} 
+              src={displayImage} 
               alt="X-ray preview" 
               className="w-full h-full object-contain"
             />

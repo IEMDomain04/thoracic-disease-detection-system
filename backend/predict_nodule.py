@@ -1,4 +1,6 @@
 import os
+import io
+import base64
 import torch
 import timm
 import numpy as np
@@ -44,6 +46,34 @@ print("Model loaded successfully.")
 # ============================================================
 # HELPER FUNCTION
 # ============================================================
+def mha_to_base64_png(image_path):
+    """Convert .mha image to base64-encoded PNG data URL for browser display."""
+    image = sitk.ReadImage(image_path)
+    img_array = sitk.GetArrayFromImage(image)
+    
+    # Take first slice if 3D
+    if len(img_array.shape) == 3:
+        img_array = img_array[0]
+    
+    # Normalize to 0-255
+    img_array = img_array.astype(np.float32)
+    img_min, img_max = img_array.min(), img_array.max()
+    if img_max > img_min:
+        img_array = ((img_array - img_min) / (img_max - img_min) * 255).astype(np.uint8)
+    else:
+        img_array = np.zeros_like(img_array, dtype=np.uint8)
+    
+    # Convert to PIL Image and save as PNG to bytes
+    pil_img = Image.fromarray(img_array, mode='L')
+    buf = io.BytesIO()
+    pil_img.save(buf, format='PNG')
+    buf.seek(0)
+    
+    # Encode to base64
+    img_base64 = base64.b64encode(buf.getvalue()).decode('ascii')
+    return f"data:image/png;base64,{img_base64}"
+
+
 def load_mha_image(image_path):
     """Load and preprocess .mha image into a tensor."""
     image = sitk.ReadImage(image_path)
@@ -79,7 +109,12 @@ def predict_image(image_path):
         probs = torch.softmax(outputs, dim=1)
         pred_class = torch.argmax(probs, dim=1).item()
         confidence = probs[0][pred_class].item()
+    
+    # Convert MHA to base64 PNG for browser display
+    preview_image = mha_to_base64_png(image_path)
+    
     return {
         "prediction": CLASS_NAMES[pred_class],
-        "confidence": round(confidence, 4)
+        "confidence": round(confidence, 4),
+        "preview_image": preview_image
     }
