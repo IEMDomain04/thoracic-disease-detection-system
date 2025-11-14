@@ -1,8 +1,17 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { ImageIcon } from 'lucide-react';
+import { ImageIcon, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Button } from './ui/button';
 
 export function ClassificationOutput({ imageSrc, prediction }) {
+  // Zoom and pan state
+  const [zoom, setZoom] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const imageContainerRef = useRef(null);
+
   // Extract prediction values with defaults
   const predictedClass = prediction?.prediction || prediction?.class || '--';
   const confidence = prediction?.confidence != null ? Number(prediction.confidence) : null;
@@ -30,6 +39,47 @@ export function ClassificationOutput({ imageSrc, prediction }) {
       : 'text-green-400 bg-green-400/10 border-green-400/50';
   
   const progressBarColor = hasNodule ? 'bg-red-400' : 'bg-green-400';
+
+  // Zoom and pan handlers
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setZoom((prev) => Math.min(Math.max(0.5, prev + delta), 5));
+  };
+
+  const handleMouseDown = (e) => {
+    if (!displayImage) return;
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y,
+    });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    setPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleZoomIn = () => {
+    setZoom((prev) => Math.min(prev + 0.25, 5));
+  };
+
+  const handleZoomOut = () => {
+    setZoom((prev) => Math.max(prev - 0.25, 0.5));
+  };
+
+  const handleReset = () => {
+    setZoom(1);
+    setPosition({ x: 0, y: 0 });
+  };
   
   return (
     <Card className="bg-gradient-to-b from-[#1E3A8A] via-[#1F2937] to-[#111827] text-[#F9FAFB] border-none shadow-lg w-full max-w-6xl mx-auto">
@@ -76,13 +126,65 @@ export function ClassificationOutput({ imageSrc, prediction }) {
 
         <div className="w-full max-w-4xl space-y-10 my-5 border-t border-[#FFFFFF]"></div>
         
+        {/* Zoom Controls */}
+        {displayImage && (
+          <div className="w-full max-w-4xl flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleZoomIn}
+                size="sm"
+                variant="outline"
+                className="bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white"
+              >
+                <ZoomIn className="h-4 w-4 mr-1" />
+                Zoom In
+              </Button>
+              <Button
+                onClick={handleZoomOut}
+                size="sm"
+                variant="outline"
+                className="bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white"
+              >
+                <ZoomOut className="h-4 w-4 mr-1" />
+                Zoom Out
+              </Button>
+              <Button
+                onClick={handleReset}
+                size="sm"
+                variant="outline"
+                className="bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white"
+              >
+                <Maximize2 className="h-4 w-4 mr-1" />
+                Reset
+              </Button>
+            </div>
+            <span className="text-sm text-[#9CA3AF] font-medium">
+              Zoom: {Math.round(zoom * 100)}%
+            </span>
+          </div>
+        )}
+        
         {/* Image Display Area */}
-        <div className="relative w-full max-w-4xl aspect-[4/3] bg-[#111827] rounded-lg border border-[#374151] flex items-center justify-center mb-6 overflow-hidden">
+        <div 
+          ref={imageContainerRef}
+          className="relative w-full max-w-4xl aspect-[4/3] bg-[#111827] rounded-lg border border-[#374151] flex items-center justify-center mb-6 overflow-hidden"
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          style={{ cursor: isDragging ? 'grabbing' : displayImage ? 'grab' : 'default' }}
+        >
           {displayImage ? (
             <img 
               src={displayImage} 
               alt="X-ray preview" 
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain select-none"
+              style={{
+                transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
+                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+              }}
+              draggable={false}
             />
           ) : (
             <div className="text-center">
