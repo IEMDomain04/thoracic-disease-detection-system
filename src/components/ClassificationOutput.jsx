@@ -191,10 +191,10 @@ export function ClassificationOutput({ imageSrc, prediction }) {
         </div>
       )}
       
-      {/* Image Display Area - LARGE - Full available height */}
+      {/* Image Display Area - MAXIMIZED - Full available height */}
       <div 
         ref={imageContainerRef}
-        className="relative w-full h-[75vh] bg-[#111827] rounded-lg border border-[#374151] flex items-center justify-center mb-4 overflow-hidden"
+        className="relative w-full h-[82vh] bg-[#111827] rounded-lg border border-[#374151] flex items-center justify-center mb-4 overflow-hidden"
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
