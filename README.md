@@ -1,29 +1,132 @@
-# Lung Nodule Detection System 
-This is the system for lung nodule detection.
+# 🫁 Lung Nodule Detection System
 
-To start!
-1. clone the repository 
+An AI-powered web application for detecting lung nodules in chest X-ray images using deep learning. This system provides automated classification with confidence scores and optional spatial attention heatmaps to visualize nodule locations.
 
-2. Do npm install for the frontend dependencies
+---
 
-3. Create an .venv file for the backend
+## 📥 Installation
 
-4. After the .venv file is created, you need it to activate .venv/Scripts/activate
+### Step 1: Clone the Repository
+Open PowerShell or Terminal and run:
+```powershell
+git clone https://github.com/IEMDomain04/thoracic-disease-detection-system.git
+cd thoracic-disease-detection-system
+```
 
-5. Once set, install the backend dependencies write pip intall -r requirements.txt
+### Step 2: Install Frontend Dependencies
+Install the required JavaScript packages:
+```powershell
+npm install
+```
+*This will install React, Vite, and all frontend libraries.*
 
-6. That's set. 
+### Step 3: Set Up Python Virtual Environment
+Create and activate a Python virtual environment for the backend:
 
-How to Run the Frontend:
-In the terminal, just write npm run dev
+**For Windows (PowerShell):**
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
 
-How to Run backend:
-Create a separate terminal for the backend, dont close the frontend terminal:
-First you need to have the model that we created for the Thesis (RVC Model):
+**For Windows (CMD):**
+```cmd
+python -m venv .venv
+.venv\Scripts\activate.bat
+```
 
-Once you have that, you're set, follow these steps:
-1. cd backend
-2. 
+**For Mac/Linux:**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
+*You should see `(.venv)` appear at the start of your command line.*
+
+### Step 4: Install Backend Dependencies
+With the virtual environment activated, install Python packages:
+```powershell
+pip install -r requirements.txt
+```
+*This installs PyTorch, FastAPI, SimpleITK, and other backend libraries.*
+
+### Step 5: Add Model Files
+Place your trained model files in the `backend/` folder:
+- `resnet50-baseline-nodule.pth` (baseline classification model)
+- `best_wsod_resnet50.pth` (spatial attention model with heatmap)
+
+*If you don't have these files, contact the repository maintainers.*
+
+---
+
+## 🚀 Running the Application
+
+You need to run **both** the frontend and backend servers simultaneously.
+
+### Option 1: Using Two Terminal Windows (Recommended for Beginners)
+
+#### Terminal 1 - Frontend
+```powershell
+npm run dev
+```
+**Expected output:**
+```
+➜  Local:   http://localhost:5173/
+```
+Keep this terminal open!
+
+#### Terminal 2 - Backend
+Open a **new** terminal window, then:
+
+**1. Navigate to backend folder:**
+```powershell
+cd backend
+```
+
+**2. Activate virtual environment:**
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+**3. Choose your model and start the server:**
+
+**For baseline model (classification only):**
+```powershell
+$env:PREDICT_MODULE = 'predict_nodule'
 uvicorn main:app --reload
+```
+
+**For spatial attention model (classification + heatmap):**
+```powershell
+$env:PREDICT_MODULE = 'predict_nodule_spatial'
+uvicorn main:app --reload
+```
+
+**Expected output:**
+```
+INFO:     Uvicorn running on http://127.0.0.1:8000
+✓ Loaded predictor: predict_nodule_spatial.predict_image
+```
+
+You're good to go!
+
+## 🎓 Educational Use
+
+This repository is developed for **educational purposes** and as part of a **thesis presentation**. It demonstrates:
+- Medical image processing with deep learning
+- Full-stack web application development
+- Integration of PyTorch models with React frontends
+- Weakly Supervised Object Detection (WSOD) techniques
+
+**⚠️ Disclaimer:** This system is for research and educational purposes only. It is **not** intended for clinical diagnosis or medical use.
+
+---
+
+## 📄 License
+
+This project is for educational purposes. Please consult the repository owner before using it in production or commercial applications.
+
+---
+
+**Happy Detecting! 🫁✨**
 
