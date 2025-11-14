@@ -1,18 +1,29 @@
+# Lung Nodule Detection System 
+This is the system for lung nodule detection.
+
+To start!
+1. clone the repository 
+
+2. Do npm install for the frontend dependencies
+
+3. Create an .venv file for the backend
+
+4. After the .venv file is created, you need it to activate .venv/Scripts/activate
+
+5. Once set, install the backend dependencies write pip intall -r requirements.txt
+
+6. That's set. 
+
+How to Run the Frontend:
+In the terminal, just write npm run dev
+
+How to Run backend:
+Create a separate terminal for the backend, dont close the frontend terminal:
+First you need to have the model that we created for the Thesis (RVC Model):
+
+Once you have that, you're set, follow these steps:
+1. cd backend
+2. 
+
 uvicorn main:app --reload
 
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
