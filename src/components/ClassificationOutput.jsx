@@ -1,10 +1,18 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { ImageIcon, ZoomIn, ZoomOut, Maximize2, Eye, EyeOff } from 'lucide-react';
+import { ImageIcon, ZoomIn, ZoomOut, Maximize2, Eye, EyeOff, Upload } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
 
-export function ClassificationOutput({ imageSrc, prediction, loading }) {
+export function ClassificationOutput({ 
+  imageSrc, 
+  prediction, 
+  loading,
+  selectedFile,
+  fileInputRef,
+  handleFileChange,
+  handleClassify 
+}) {
   // Zoom and pan state
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -14,6 +22,8 @@ export function ClassificationOutput({ imageSrc, prediction, loading }) {
 
   // Heatmap toggle state
   const [showHeatmap, setShowHeatmap] = useState(true);
+  
+  const openFileDialog = () => fileInputRef.current?.click();
 
   // Extract prediction values with defaults
   const predictedClass = prediction?.prediction || prediction?.class || '--';
@@ -158,10 +168,11 @@ export function ClassificationOutput({ imageSrc, prediction, loading }) {
         </div>
       )}
       
-      {/* Zoom Controls */}
-      {displayImage && (
-        <div className="w-full flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+      {/* Control Panel - Always visible */}
+      <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4 p-4 bg-[#1F2937] rounded-lg border border-[#374151]">
+        {/* Left Side - Zoom and View Controls (only show when image is loaded) */}
+        {displayImage && (
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               onClick={handleZoomIn}
               size="sm"
@@ -216,12 +227,52 @@ export function ClassificationOutput({ imageSrc, prediction, loading }) {
                 </Button>
               </>
             )}
+            <div className="h-6 w-px bg-[#374151] mx-1"></div>
+            <span className="text-sm text-[#9CA3AF] font-medium">
+              Zoom: {Math.round(zoom * 100)}%
+            </span>
           </div>
-          <span className="text-sm text-[#9CA3AF] font-medium">
-            Zoom: {Math.round(zoom * 100)}%
-          </span>
+        )}
+        
+        {/* Right Side - Upload Controls (always visible) */}
+        <div className="flex items-center gap-2 ml-auto">
+          <input
+            className="hidden"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            type="file"
+            accept=".jpg,.jpeg,.png,.mha"
+            aria-label="Choose X-ray image"
+          />
+          
+          {selectedFile && (
+            <div className="text-right max-w-xs hidden lg:block">
+              <p className="text-xs text-[#9CA3AF]">Selected:</p>
+              <p className="text-xs text-[#E5E7EB] truncate font-medium">
+                {selectedFile.name}
+              </p>
+            </div>
+          )}
+          
+          <Button 
+            className="bg-[#0EA5E9] text-white hover:bg-[#0d96d4] active:bg-[#0a74a3] cursor-pointer" 
+            onClick={openFileDialog}
+            size="sm"
+          >
+            <Upload className="h-4 w-4 mr-1" />
+            Choose File
+          </Button>
+          
+          <Button
+            className="bg-[#14B8A6] hover:bg-[#10A39B] active:bg-[#0c7d77] text-white font-medium cursor-pointer"
+            onClick={handleClassify}
+            disabled={!selectedFile || loading}
+            size="sm"
+          >
+            {loading ? "Analyzing..." : "Classify"}
+          </Button>
         </div>
-      )}
+      </div>
       
       {/* Image Display Area - MAXIMIZED - Full available height */}
       <div 

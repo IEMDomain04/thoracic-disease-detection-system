@@ -78,15 +78,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#111827] text-white flex flex-col font-sans">
-      {/* Header with Upload Controls */}
-      <Header 
-        selectedFile={selectedFile}
-        setSelectedFile={setSelectedFile}
-        fileInputRef={fileInputRef}
-        handleFileChange={handleFileChange}
-        handleClassify={handleClassify}
-        loading={loading}
-      />
+      {/* Header */}
+      <Header />
 
       <main className="w-full px-6 py-6 flex-1">
         {/* Results Section - Full Screen */}
@@ -106,6 +99,10 @@ export default function App() {
                 imageSrc={previewUrl} 
                 prediction={prediction}
                 loading={loading}
+                selectedFile={selectedFile}
+                fileInputRef={fileInputRef}
+                handleFileChange={handleFileChange}
+                handleClassify={handleClassify}
               />
             </div>
 
