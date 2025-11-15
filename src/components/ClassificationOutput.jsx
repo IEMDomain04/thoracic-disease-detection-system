@@ -119,123 +119,65 @@ export function ClassificationOutput({
   };
   
   return (
-    <div className="w-full">
-      {/* Classification Results Summary - Only show after classification */}
-      {prediction && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-6 bg-gradient-to-b from-[#1E3A8A] via-[#1F2937] to-[#111827] rounded-xl border border-[#374151]">
-          <div>
-            <p className="text-sm text-[#E5E7EB] mb-2">Prediction:</p>
-            <Badge 
-              variant="outline" 
-              className={`text-lg px-4 py-2 font-semibold ${badgeColor}`}
-            >
-              {predictedClass}
-            </Badge>
-          </div>
-          
-          <div>
-            <p className="text-sm text-[#E5E7EB] mb-2">Confidence Score:</p>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 bg-[#374151] rounded-full h-4 overflow-hidden">
-                <div 
-                  className={`${progressBarColor} h-full rounded-full transition-all duration-500`}
-                  style={{ width: confPercent != null ? `${confPercent}%` : '0%' }} 
-                />
-              </div>
-              <span className="text-base text-[#9CA3AF] min-w-16 font-medium">
-                {confPercent != null ? `${confPercent}%` : '--%'}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Preview Status Banner - Show when image selected but not classified */}
-      {imageSrc && !prediction && !loading && (
-        <div className="w-full mb-4 p-4 bg-[#0EA5E9]/10 border border-[#0EA5E9]/30 rounded-lg">
-          <p className="text-sm text-[#38BDF8] text-center">
-            📷 <strong>Preview Mode:</strong> Image uploaded. Click "Classify" button to analyze for nodule detection.
-          </p>
-        </div>
-      )}
-      
-      {/* Loading Banner - Show when processing */}
-      {loading && (
-        <div className="w-full mb-4 p-4 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg">
-          <p className="text-sm text-[#F59E0B] text-center">
-            ⏳ <strong>Processing:</strong> {prediction ? 'Analyzing image...' : 'Loading preview...'}
-          </p>
-        </div>
-      )}
-      
-      {/* Control Panel - Always visible */}
-      <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4 p-4 bg-[#1F2937] rounded-lg border border-[#374151]">
-        {/* Left Side - Zoom and View Controls (only show when image is loaded) */}
-        {displayImage && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={handleZoomIn}
-              size="sm"
-              variant="outline"
-              className="bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white"
-            >
-              <ZoomIn className="h-4 w-4 mr-1" />
-              Zoom In
-            </Button>
-            <Button
-              onClick={handleZoomOut}
-              size="sm"
-              variant="outline"
-              className="bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white"
-            >
-              <ZoomOut className="h-4 w-4 mr-1" />
-              Zoom Out
-            </Button>
-            <Button
-              onClick={handleReset}
-              size="sm"
-              variant="outline"
-              className="bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white"
-            >
-              <Maximize2 className="h-4 w-4 mr-1" />
-              Reset
-            </Button>
-            {hasHeatmapData && (
-              <>
-                <div className="h-6 w-px bg-[#374151] mx-1"></div>
-                <Button
-                  onClick={toggleHeatmap}
-                  size="sm"
-                  variant="outline"
-                  className={`${
-                    showHeatmap 
-                      ? 'bg-[#EF4444] border-[#EF4444] text-white hover:bg-[#DC2626]' 
-                      : 'bg-[#10B981] border-[#10B981] text-white hover:bg-[#059669]'
-                  }`}
+    <div className="w-full h-full flex gap-6">
+      {/* Left Sidebar - Controls and Info */}
+      <div className="w-80 flex-shrink-0 space-y-4">
+        
+        {/* Classification Results - Only show after classification */}
+        {prediction && (
+          <div className="p-4 bg-gradient-to-b from-[#1E3A8A] via-[#1F2937] to-[#111827] rounded-xl border border-[#374151]">
+            <div className="space-y-4">
+              {/* Prediction */}
+              <div>
+                <p className="text-xs text-[#9CA3AF] mb-2">Prediction:</p>
+                <Badge 
+                  variant="outline" 
+                  className={`text-sm px-3 py-1.5 font-semibold ${badgeColor} w-full justify-center`}
                 >
-                  {showHeatmap ? (
-                    <>
-                      <Eye className="h-4 w-4 mr-1" />
-                      Show Original
-                    </>
-                  ) : (
-                    <>
-                      <EyeOff className="h-4 w-4 mr-1" />
-                      Show Heatmap
-                    </>
-                  )}
-                </Button>
-              </>
-            )}
-            <div className="h-6 w-px bg-[#374151] mx-1"></div>
-            <span className="text-sm text-[#9CA3AF] font-medium">
-              Zoom: {Math.round(zoom * 100)}%
-            </span>
+                  {predictedClass}
+                </Badge>
+              </div>
+              
+              {/* Confidence Score - Vertical */}
+              <div>
+                <p className="text-xs text-[#9CA3AF] mb-2">Confidence:</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-lg text-[#E5E7EB] font-bold min-w-16">
+                    {confPercent != null ? `${confPercent}%` : '--%'}
+                  </span>
+                  <div className="flex-1 bg-[#374151] rounded-full h-3 overflow-hidden">
+                    <div 
+                      className={`${progressBarColor} h-full rounded-full transition-all duration-500`}
+                      style={{ width: confPercent != null ? `${confPercent}%` : '0%' }} 
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         
-        {/* Right Side - Upload Controls (always visible) */}
-        <div className="flex items-center gap-2 ml-auto">
+        {/* Status Banners */}
+        {imageSrc && !prediction && !loading && (
+          <div className="p-3 bg-[#0EA5E9]/10 border border-[#0EA5E9]/30 rounded-lg">
+            <p className="text-xs text-[#38BDF8] text-center">
+              📷 <strong>Preview Mode</strong><br/>Click Classify to analyze
+            </p>
+          </div>
+        )}
+        
+        {loading && (
+          <div className="p-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg">
+            <p className="text-xs text-[#F59E0B] text-center">
+              ⏳ <strong>Processing...</strong><br/>{prediction ? 'Analyzing' : 'Loading preview'}
+            </p>
+          </div>
+        )}
+        
+        {/* Upload Controls */}
+        <div className="p-4 bg-[#1F2937] rounded-lg border border-[#374151] space-y-3">
+          <h3 className="text-sm font-semibold text-[#E5E7EB] mb-3">Upload Image</h3>
+          
           <input
             className="hidden"
             ref={fileInputRef}
@@ -246,7 +188,7 @@ export function ClassificationOutput({
           />
           
           {selectedFile && (
-            <div className="text-right max-w-xs hidden lg:block">
+            <div className="p-2 bg-[#111827] rounded border border-[#374151]">
               <p className="text-xs text-[#9CA3AF]">Selected:</p>
               <p className="text-xs text-[#E5E7EB] truncate font-medium">
                 {selectedFile.name}
@@ -255,16 +197,16 @@ export function ClassificationOutput({
           )}
           
           <Button 
-            className="bg-[#0EA5E9] text-white hover:bg-[#0d96d4] active:bg-[#0a74a3] cursor-pointer" 
+            className="w-full bg-[#0EA5E9] text-white hover:bg-[#0d96d4] cursor-pointer" 
             onClick={openFileDialog}
             size="sm"
           >
-            <Upload className="h-4 w-4 mr-1" />
+            <Upload className="h-4 w-4 mr-2" />
             Choose File
           </Button>
           
           <Button
-            className="bg-[#14B8A6] hover:bg-[#10A39B] active:bg-[#0c7d77] text-white font-medium cursor-pointer"
+            className="w-full bg-[#14B8A6] hover:bg-[#10A39B] text-white font-medium cursor-pointer"
             onClick={handleClassify}
             disabled={!selectedFile || loading}
             size="sm"
@@ -272,60 +214,135 @@ export function ClassificationOutput({
             {loading ? "Analyzing..." : "Classify"}
           </Button>
         </div>
-      </div>
-      
-      {/* Image Display Area - MAXIMIZED - Full available height */}
-      <div 
-        ref={imageContainerRef}
-        className="relative w-full h-[82vh] bg-[#111827] rounded-lg border border-[#374151] flex items-center justify-center mb-4 overflow-hidden"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        style={{ 
-          cursor: isDragging ? 'grabbing' : displayImage ? 'grab' : 'default'
-        }}
-      >
-        {displayImage ? (
-          <img 
-            src={displayImage} 
-            alt="X-ray preview" 
-            className="w-full h-full object-contain select-none"
-            style={{
-              transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
-              transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-            }}
-            draggable={false}
-          />
-        ) : (
-          <div className="text-center">
-            <ImageIcon className="mx-auto h-24 w-24 text-[#38BDF8] mb-3" />
-            <p className="text-sm text-[#E5E7EB]">
-              No image uploaded yet
-            </p>
-            <p className="text-xs text-[#9CA3AF] mt-2">
-              Use "Choose File" button above to upload a chest X-ray or MHA file
+        
+        {/* Zoom Controls - Only show when image loaded */}
+        {displayImage && (
+          <div className="p-4 bg-[#1F2937] rounded-lg border border-[#374151] space-y-2">
+            <h3 className="text-sm font-semibold text-[#E5E7EB] mb-3">View Controls</h3>
+            
+            <Button
+              onClick={handleZoomIn}
+              size="sm"
+              variant="outline"
+              className="w-full bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white justify-start"
+            >
+              <ZoomIn className="h-4 w-4 mr-2" />
+              Zoom In
+            </Button>
+            
+            <Button
+              onClick={handleZoomOut}
+              size="sm"
+              variant="outline"
+              className="w-full bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white justify-start"
+            >
+              <ZoomOut className="h-4 w-4 mr-2" />
+              Zoom Out
+            </Button>
+            
+            <Button
+              onClick={handleReset}
+              size="sm"
+              variant="outline"
+              className="w-full bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white justify-start"
+            >
+              <Maximize2 className="h-4 w-4 mr-2" />
+              Reset View
+            </Button>
+            
+            {hasHeatmapData && (
+              <>
+                <div className="h-px bg-[#374151] my-3"></div>
+                <Button
+                  onClick={toggleHeatmap}
+                  size="sm"
+                  variant="outline"
+                  className={`w-full justify-start ${
+                    showHeatmap 
+                      ? 'bg-[#EF4444] border-[#EF4444] text-white hover:bg-[#DC2626]' 
+                      : 'bg-[#10B981] border-[#10B981] text-white hover:bg-[#059669]'
+                  }`}
+                >
+                  {showHeatmap ? (
+                    <>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Show Original
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="h-4 w-4 mr-2" />
+                      Show Heatmap
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
+            
+            <div className="pt-2 text-center">
+              <span className="text-xs text-[#9CA3AF]">
+                Zoom: <span className="font-semibold text-[#E5E7EB]">{Math.round(zoom * 100)}%</span>
+              </span>
+            </div>
+          </div>
+        )}
+        
+        {/* Heatmap Status - Only show after classification */}
+        {hasHeatmapData && displayImage && prediction && (
+          <div className="p-3 bg-[#374151]/30 border border-[#374151] rounded-lg">
+            <p className="text-xs text-[#E5E7EB] text-center leading-relaxed">
+              {showHeatmap ? (
+                <>
+                  🔴 <strong>Heatmap View</strong><br/>
+                  <span className="text-[#9CA3AF]">Red/yellow areas show attention regions</span>
+                </>
+              ) : (
+                <>
+                  ⚪ <strong>Original View</strong><br/>
+                  <span className="text-[#9CA3AF]">Showing unmodified X-ray</span>
+                </>
+              )}
             </p>
           </div>
         )}
       </div>
       
-      {/* Heatmap Status Indicator - Only show after classification */}
-      {hasHeatmapData && displayImage && prediction && (
-        <div className="w-full p-3 bg-[#374151]/30 border border-[#374151] rounded-lg">
-          <p className="text-sm text-[#E5E7EB] text-center">
-            {showHeatmap ? (
-              <>
-                🔴 <strong>Heatmap View:</strong> Red/yellow areas indicate high attention regions where nodules may be present.
-              </>
-            ) : (
-              <>
-                ⚪ <strong>Original View:</strong> Showing original X-ray image without heatmap overlay.
-              </>
-            )}
-          </p>
+      {/* Right Side - Image Display (Takes remaining space) */}
+      <div className="flex-1 flex flex-col">
+        <div 
+          ref={imageContainerRef}
+          className="relative w-full h-full bg-[#111827] rounded-lg border border-[#374151] flex items-center justify-center overflow-hidden"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          style={{ 
+            cursor: isDragging ? 'grabbing' : displayImage ? 'grab' : 'default'
+          }}
+        >
+          {displayImage ? (
+            <img 
+              src={displayImage} 
+              alt="X-ray preview" 
+              className="w-full h-full object-contain select-none"
+              style={{
+                transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
+                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+              }}
+              draggable={false}
+            />
+          ) : (
+            <div className="text-center">
+              <ImageIcon className="mx-auto h-32 w-32 text-[#38BDF8] my-5" />
+              <p className="text-lg text-[#E5E7EB] font-medium">
+                No image uploaded yet
+              </p>
+              <p className="text-sm text-[#9CA3AF] my-5">
+                Use "Choose File" button to upload a chest X-ray or MHA file
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
