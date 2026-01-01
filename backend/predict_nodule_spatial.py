@@ -29,7 +29,7 @@ model = WSODModel(base_model, num_classes=2)
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(f"Model file not found: {MODEL_PATH}")
 
-ckpt = torch.load(MODEL_PATH, map_location=DEVICE)
+ckpt = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=False)
 if isinstance(ckpt, dict):
     state_dict = ckpt.get("model_state_dict", ckpt.get("state_dict", ckpt))
 else:
