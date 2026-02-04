@@ -2,6 +2,10 @@
 
 An AI-powered web application for detecting lung nodules in chest X-ray images using deep learning. This system provides automated classification with confidence scores and optional spatial attention heatmaps to visualize nodule locations.
 
+## TODO
+- Add storage for `.mha` images.
+- Deploy the system on Vercel for web access.
+
 ---
 
 ## 📥 Installation
