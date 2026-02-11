@@ -197,7 +197,7 @@ export function ClassificationOutput({
           )}
           
           <Button 
-            className="w-full bg-[#0EA5E9] text-white hover:bg-[#0d96d4] active:scale-90 cursor-pointer h-8 text-xs" 
+            className="btn-choosefile w-full bg-[#0EA5E9] text-white hover:bg-[#0d96d4] active:scale-90 cursor-pointer h-8 text-xs" 
             onClick={openFileDialog}
           >
             <Upload className="h-3 w-3 mr-1.5" />
@@ -205,7 +205,7 @@ export function ClassificationOutput({
           </Button>
           
           <Button
-            className="w-full bg-[#14B8A6] hover:bg-[#10A39B] active:scale-90 text-white font-medium cursor-pointer h-8 text-xs"
+            className="btn-classify w-full bg-[#14B8A6] hover:bg-[#10A39B] active:scale-90 text-white font-medium cursor-pointer h-8 text-xs"
             onClick={handleClassify}
             disabled={!selectedFile || loading}
           >
@@ -222,7 +222,7 @@ export function ClassificationOutput({
               onClick={handleZoomIn}
               size="sm"
               variant="outline"
-              className="w-full bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white active:scale-90 justify-start h-8 text-xs cursor-pointer"
+              className="btn-controls w-full bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white active:scale-90 justify-start h-8 text-xs cursor-pointer"
             >
               <ZoomIn className="h-3 w-3 mr-1.5" />
               Zoom In
@@ -232,7 +232,7 @@ export function ClassificationOutput({
               onClick={handleZoomOut}
               size="sm"
               variant="outline"
-              className="w-full bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white active:scale-90 justify-start h-8 text-xs cursor-pointer"
+              className="btn-controls w-full bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white active:scale-90 justify-start h-8 text-xs cursor-pointer"
             >
               <ZoomOut className="h-3 w-3 mr-1.5" />
               Zoom Out
@@ -242,7 +242,7 @@ export function ClassificationOutput({
               onClick={handleReset}
               size="sm"
               variant="outline"
-              className="w-full bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white active:scale-90 justify-start h-8 text-xs cursor-pointer"
+              className="btn-controls w-full bg-[#1F2937] border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:text-white active:scale-90 justify-start h-8 text-xs cursor-pointer"
             >
               <Maximize2 className="h-3 w-3 mr-1.5" />
               Reset View
@@ -255,7 +255,7 @@ export function ClassificationOutput({
                   onClick={toggleHeatmap}
                   size="sm"
                   variant="outline"
-                  className={`w-full justify-start h-8 text-xs cursor-pointer active:scale-90 ${
+                  className={`btn-controls w-full justify-start h-8 text-xs cursor-pointer active:scale-90 ${
                     showHeatmap 
                       ? 'bg-[#EF4444] border-[#EF4444] text-white hover:bg-[#DC2626]' 
                       : 'bg-[#10B981] border-[#10B981] text-white hover:bg-[#059669]'

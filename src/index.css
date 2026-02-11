@@ -1,6 +1,29 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+.btn {
+  transition: transform 0.2s ease;
+}
+
+.btn:hover {
+  transform: scale(1.1);
+  background-color: rgb(0, 0, 156);
+}
+
+.btn-choosefile:hover {
+  transform: scale(1.05);
+  background-color: rgb(117, 117, 255);
+}
+
+.btn-classify:hover {
+  transform: scale(1.05);
+  background-color: rgb(17, 175, 122);
+}
+
+.btn-controls:hover {
+  transform: scale(1.05);
+}
+
 body {
   background-color: #1F2937;
 }
