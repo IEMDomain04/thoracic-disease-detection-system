@@ -24,10 +24,14 @@ CLASS_NAMES = ["No Nodule", "Nodule Detected"]
 # ============================================================
 # LOAD PREPROCESSING ALGORITHM (NODE21 STANDARD)
 # ============================================================
+print("Loading NODE21 preprocessing algorithm (opencxr)...")
 try:
+    # Load the standardization algorithm once
     cxr_std_algorithm = opencxr.load(opencxr.algorithms.cxr_standardize)
+    print("Preprocessing algorithm loaded.")
 except Exception as e:
     print(f"Error loading opencxr: {e}")
+    print("Ensure you have installed opencxr: pip install opencxr")
     raise e
 
 # ============================================================
@@ -70,48 +74,57 @@ def preprocess_node21_style(image_path):
     - NODE21 .mha files are already preprocessed (cropped, normalized, 1024x1024)
     - Other formats (DICOM, PNG, JPG, etc.) need preprocessing to match training data
     """
+    file_extension = os.path.splitext(image_path)[1].lower()
+    
+    if file_extension in ['.mha', '.mhd']:
+        # Already preprocessed - use opencxr to read
+        img_np, spacing, _ = read_file(image_path)
+        std_img = img_np
+        std_img = np.rot90(std_img, k=-1)
+        
+    elif file_extension in ['.dcm', '.dicom']:
+        # DICOM files - opencxr can handle these
+        img_np, spacing, _ = read_file(image_path)
+        std_img, new_spacing, size_changes = cxr_std_algorithm.run(img_np, spacing)
+        
+    elif file_extension in ['.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff']:
+        # Image files - read with PIL, then preprocess
+        img_pil = Image.open(image_path).convert('L')
+        img_np = np.array(img_pil)
+        spacing = (0.143, 0.143)
+        
+        try:
+            std_img, new_spacing, size_changes = cxr_std_algorithm.run(img_np, spacing)
+        except Exception as preproc_error:
+            # Fallback: simple resize
+            img_pil_resized = img_pil.resize((1024, 1024), Image.Resampling.LANCZOS)
+            std_img = np.array(img_pil_resized)
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}. "
+                       f"Supported formats: .mha, .mhd, .dcm, .jpg, .jpeg, .png, .bmp, .tif, .tiff")
+    
+    return std_img
+
+def generate_preview(image_path):
+    """
+    Generate a preview image for any supported file type.
+    This is called when a file is uploaded, before classification.
+    """
     try:
-        # 1. Check file extension first
         file_extension = os.path.splitext(image_path)[1].lower()
         
-        # 2. Read file based on type
-        if file_extension in ['.mha', '.mhd']:
-            # Already preprocessed - use opencxr to read
-            img_np, spacing, _ = read_file(image_path)
-            std_img = img_np
-            std_img = np.rot90(std_img, k=-1)
-        elif file_extension in ['.dcm', '.dicom']:
-            # DICOM files - opencxr can handle these
-            img_np, spacing, _ = read_file(image_path)
-            
-            std_img, new_spacing, size_changes = cxr_std_algorithm.run(img_np, spacing)
-            
-        elif file_extension in ['.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff']:
-            # Image files - read with PIL/OpenCV, then preprocess
-            # Read image
-            img_pil = Image.open(image_path).convert('L')  # Convert to grayscale
-            img_np = np.array(img_pil)
-            spacing = (0.143, 0.143)
-            
-            try:
-                std_img, new_spacing, size_changes = cxr_std_algorithm.run(img_np, spacing)
-            except Exception as preproc_error:
-                print(f"WARNING: OpenCXR preprocessing failed: {str(preproc_error)}")
-                print(f"  Using fallback: simple resize to 1024x1024")
-                # Fallback: simple resize
-                img_pil_resized = img_pil.resize((1024, 1024), Image.Resampling.LANCZOS)
-                std_img = np.array(img_pil_resized)
+        if file_extension in ['.mha', '.mhd', '.dcm', '.dicom']:
+            # For medical imaging formats, preprocess and return as base64
+            std_img_np = preprocess_node21_style(image_path)
+            return numpy_to_base64(std_img_np)
         else:
-            raise ValueError(f"Unsupported file format: {file_extension}. "
-                           f"Supported formats: .mha, .mhd, .dcm, .jpg, .jpeg, .png, .bmp, .tif, .tiff")
-        
-        return std_img
-        
+            # For regular images (jpg, png, etc), just read and convert
+            img_pil = Image.open(image_path).convert('L')
+            img_np = np.array(img_pil)
+            return numpy_to_base64(img_np)
     except Exception as e:
-        print(f"FATAL ERROR in preprocess_node21_style: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise
+        print(f"Preview generation failed: {str(e)}")
+        return None
 
 def numpy_to_base64(img_np):
     """Convert numpy array (standardized image) to base64 PNG."""
@@ -226,26 +239,18 @@ def get_attention_from_model(model, img_tensor):
 
 def predict_image(image_path):
     """Run model prediction with NODE21 preprocessing."""
+    
     # 1. PREPROCESSING (Domain Shift Fix)
-    # .mha files are already preprocessed, other formats need preprocessing
     try:
         std_img_np = preprocess_node21_style(image_path)
     except Exception as e:
-        error_msg = f"Preprocessing failed: {str(e)}"
-        print(f"{error_msg}")
-        import traceback
-        traceback.print_exc()
-        return {"error": error_msg}
+        return {"error": f"Preprocessing failed: {str(e)}"}
 
     # 2. PREPARE TENSOR
     try:
         img_tensor = prepare_tensor_for_model(std_img_np).to(DEVICE)
     except Exception as e:
-        error_msg = f"Tensor preparation failed: {str(e)}"
-        print(f"{error_msg}")
-        import traceback
-        traceback.print_exc()
-        return {"error": error_msg}
+        return {"error": f"Tensor preparation failed: {str(e)}"}
     
     # 3. INFERENCE
     try:
@@ -254,31 +259,16 @@ def predict_image(image_path):
             probs = torch.softmax(outputs, dim=1)
             pred_class = torch.argmax(probs, dim=1).item()
             confidence = probs[0][pred_class].item()
-            
-            # Generate attention map
             attention_map = get_attention_from_model(model, img_tensor)
     except Exception as e:
-        error_msg = f"Model inference failed: {str(e)}"
-        print(f"{error_msg}")
-        import traceback
-        traceback.print_exc()
-        return {"error": error_msg}
+        return {"error": f"Model inference failed: {str(e)}"}
     
     # 4. VISUALIZATION
     try:
-        # We display the *Standardized* image, not the raw one.
-        # If we displayed the raw one, the heatmap (which is based on the crop)
-        # would not line up with the anatomy.
         preview_image = numpy_to_base64(std_img_np)
-        
-        # Generate heatmap overlay on the standardized image
         heatmap_image = generate_heatmap_overlay_from_data(std_img_np, attention_map)
     except Exception as e:
-        error_msg = f"Visualization failed: {str(e)}"
-        print(f"{error_msg}")
-        import traceback
-        traceback.print_exc()
-        return {"error": error_msg}
+        return {"error": f"Visualization failed: {str(e)}"}
     
     return {
         "prediction": CLASS_NAMES[pred_class],

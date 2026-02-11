@@ -33,6 +33,11 @@ try:
     predictor_module = importlib.import_module(PREDICT_MODULE)
     predict_image = predictor_module.predict_image
     print(f"✓ Loaded predictor: {PREDICT_MODULE}.predict_image")
+    
+    if hasattr(predictor_module, 'generate_preview'):
+        generate_preview = predictor_module.generate_preview
+    else:
+        generate_preview = None
 except Exception as e:
     raise RuntimeError(f"Failed to import {PREDICT_MODULE}: {e}")
 
@@ -65,10 +70,13 @@ async def preview(file: UploadFile = File(...)):
         temp_path = tmp.name
 
     try:
-        # Import the helper function from predict_nodule_spatial
-        from predict_nodule_spatial import mha_to_base64_png
-        preview_image = mha_to_base64_png(temp_path)
-        result = {"preview_image": preview_image}
+        if generate_preview is not None:
+            preview_image = generate_preview(temp_path)
+            result = {"preview_image": preview_image}
+        else:
+            result = {"error": "Preview generation not available for this predictor"}
+    except Exception as e:
+        result = {"error": f"Preview generation failed: {str(e)}"}
     finally:
         tmp.close()
         os.remove(temp_path)

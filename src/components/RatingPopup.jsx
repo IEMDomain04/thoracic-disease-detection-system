@@ -15,13 +15,12 @@ export function RatingPopup({ isOpen, onClose, onSubmit }) {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const popupRef = useRef(null);
 
-  // Center popup on mount
   useEffect(() => {
     if (isOpen && popupRef.current) {
       const rect = popupRef.current.getBoundingClientRect();
       setPosition({
-        x: (window.innerWidth - rect.width) / 2,
-        y: (window.innerHeight - rect.height) / 2
+        x: window.innerWidth - rect.width - 100,
+        y: (window.innerHeight - rect.height) / 2 
       });
     }
   }, [isOpen]);
