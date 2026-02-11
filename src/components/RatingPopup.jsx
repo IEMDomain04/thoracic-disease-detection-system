@@ -5,7 +5,8 @@ export function RatingPopup({ isOpen, onClose, onSubmit }) {
   const [ratings, setRatings] = useState({
     classificationAccuracy: 0,
     localizationAccuracy: 0,
-    easeOfUse: 0
+    easeOfUse: 0,
+    feedback: ''
   });
   
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -60,6 +61,10 @@ export function RatingPopup({ isOpen, onClose, onSubmit }) {
 
   const handleRatingClick = (category, value) => {
     setRatings(prev => ({ ...prev, [category]: value }));
+  };
+
+  const handleFeedbackChange = (e) => {
+    setRatings(prev => ({ ...prev, feedback: e.target.value }));
   };
 
   const handleSubmit = () => {
@@ -161,13 +166,27 @@ export function RatingPopup({ isOpen, onClose, onSubmit }) {
             ))}
           </div>
         </div>
+
+        {/* Suggestions/Feedback */}
+        <div className="text-center">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Suggestions/Feedback
+          </label>
+          <textarea
+            value={ratings.feedback}
+            onChange={handleFeedbackChange}
+            placeholder="Share your thoughts..."
+            rows={3}
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+          />
+        </div>
       </div>
 
       <div className="px-6 pb-6">
         <button
           onClick={handleSubmit}
           disabled={!ratings.classificationAccuracy || !ratings.localizationAccuracy || !ratings.easeOfUse}
-          className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
         >
           Submit
         </button>
