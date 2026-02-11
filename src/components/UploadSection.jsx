@@ -1,22 +1,27 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Upload } from 'lucide-react';
-import { useRef, useState, useEffect } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { Button } from "./ui/button";
+import { Upload } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
 
 // --- ADD THIS LINE HERE ---
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
-export function UploadSection({ 
-  selectedFile, 
-  setSelectedFile, 
-  previewUrl, 
+export function UploadSection({
+  selectedFile,
+  setSelectedFile,
+  previewUrl,
   setPreviewUrl,
   prediction,
   setPrediction,
   loading,
-  setLoading
+  setLoading,
 }) {
-  // ... (keep existing refs and useEffects) ...
   const fileInputRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState(null);
@@ -31,7 +36,6 @@ export function UploadSection({
     return () => URL.revokeObjectURL(url);
   }, [selectedFile, setPreviewUrl]);
 
-  // ... (keep file handling functions: openFileDialog, handleFileChange, handleDrop, etc.) ...
   const openFileDialog = () => fileInputRef.current?.click();
 
   const handleFileChange = (e) => {
@@ -56,7 +60,6 @@ export function UploadSection({
     setIsDragging(false);
   };
 
-
   const handleClassify = async () => {
     if (!selectedFile) return;
     setLoading(true);
@@ -74,7 +77,7 @@ export function UploadSection({
 
       const result = await response.json();
       setPrediction(result);
-      
+
       if (result.preview_image) {
         setPreviewUrl(result.preview_image);
       }
@@ -85,16 +88,11 @@ export function UploadSection({
     }
   };
 
-  // ... (rest of your JSX return statement) ...
   return (
     <Card className="bg-gradient-to-b from-[#1E3A8A] via-[#1F2937] to-[#111827] text-[#F9FAFB] border-none shadow-lg">
-      {/* ... keep existing JSX ... */}
-      <CardHeader className="pb-3">
-         {/* ... */}
-      </CardHeader>
+      <CardHeader className="pb-3"></CardHeader>
       <CardContent className="space-y-3">
-         {/* ... */}
-          <Button
+        <Button
           className="w-full cursor-pointer bg-[#14B8A6] hover:bg-[#10A39B] active:bg-[#0c7d77] text-white font-medium transition-all"
           onClick={handleClassify}
           disabled={!selectedFile || loading}
