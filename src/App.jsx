@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Header } from './components/Header';
 import { UploadSection } from './components/UploadSection';
 import { ClassificationOutput } from './components/ClassificationOutput';
+import { RatingPopup } from './components/RatingPopup';
 
 // --- ADD THIS LINE HERE ---
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -11,6 +12,7 @@ export default function App() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showRatingPopup, setShowRatingPopup] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleFileChange = async (e) => {
@@ -48,7 +50,7 @@ export default function App() {
     }
   };
 
-  const handleClassify = async () => {
+    const handleClassify = async () => {
     if (!selectedFile) return;
     setLoading(true);
     setPrediction(null);
@@ -68,11 +70,17 @@ export default function App() {
       if (result.preview_image) {
         setPreviewUrl(result.preview_image);
       }
+      setShowRatingPopup(true);
     } catch (err) {
       console.error("Prediction failed:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRatingSubmit = (ratings) => {
+    console.log("User ratings:", ratings);
+    // backend logic wla p
   };
 
   return (
@@ -91,7 +99,16 @@ export default function App() {
           />
         </div>
       </main>
-      <footer className="border-t py-2 bg-gradient-to-b from-[#1E3A8A] via-[#1F2937] to-[#111827] flex-shrink-0">
+
+      {/* Rating Popup */}
+      <RatingPopup 
+        isOpen={showRatingPopup}
+        onClose={() => setShowRatingPopup(false)}
+        onSubmit={handleRatingSubmit}
+      />
+
+      {/* Footer - Compact */}
+      <footer className="border-t py-2 bg-linear-to-b from-[#1E3A8A] via-[#1F2937] to-[#111827] shrink-0">
         <div className="container mx-auto px-4 text-center">
           <p className="text-[#F9FAFB] font-semibold text-xs">
             Nodule Detection System – Enhanced ResNet-50 with Lightweight Transformer and Spatial Attention

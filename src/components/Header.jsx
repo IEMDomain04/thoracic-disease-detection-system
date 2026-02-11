@@ -3,7 +3,7 @@ import { Activity } from "lucide-react";
 
 export function Header() {
   return (
-    <div className="border-b px-4 py-2 bg-gradient-to-b from-[#1E3A8A] via-[#1F2937] to-[#111827] text-[#F9FAFB] flex-shrink-0">
+    <div className="border-b px-4 py-2 bg-linear-to-b from-[#1E3A8A] via-[#1F2937] to-[#111827] text-[#F9FAFB] shrink-0">
       <div className="max-w-[1800px] mx-auto flex items-center">
         {/* Title - Compact */}
         <div className="flex items-center gap-2">
