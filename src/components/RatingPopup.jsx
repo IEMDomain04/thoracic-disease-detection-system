@@ -3,8 +3,9 @@ import { X } from 'lucide-react';
 
 export function RatingPopup({ isOpen, onClose, onSubmit }) {
   const [ratings, setRatings] = useState({
-    classificationAccuracy: 0,
-    localizationAccuracy: 0,
+    clinicalAlignment: '', // yes/no/partially
+    heatmapAccuracy: 0, // 1-5 Likert scale
+    diagnosisReconsideration: '', // changed/confirmed/disagreed
     easeOfUse: 0,
     feedback: ''
   });
@@ -63,6 +64,10 @@ export function RatingPopup({ isOpen, onClose, onSubmit }) {
     setRatings(prev => ({ ...prev, [category]: value }));
   };
 
+  const handleChoiceClick = (category, value) => {
+    setRatings(prev => ({ ...prev, [category]: value }));
+  };
+
   const handleFeedbackChange = (e) => {
     setRatings(prev => ({ ...prev, feedback: e.target.value }));
   };
@@ -81,7 +86,7 @@ export function RatingPopup({ isOpen, onClose, onSubmit }) {
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        width: '384px',
+        width: '450px',
         cursor: isDragging ? 'grabbing' : 'default',
         backgroundColor: 'rgba(31, 41, 55, 0.85)',
         backdropFilter: 'blur(4px)'
@@ -101,18 +106,45 @@ export function RatingPopup({ isOpen, onClose, onSubmit }) {
       </div>
 
       <div className="p-6 space-y-4">
-        {/* Classification Accuracy */}
+        {/* Clinical Alignment */}
         <div className="text-center">
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Classification Accuracy
+            Did the AI's prediction align with your initial clinical assessment?
           </label>
           <div className="flex gap-2 justify-center">
+            {[
+              { value: 'yes', label: 'Yes' },
+              { value: 'partially', label: 'Partially' },
+              { value: 'no', label: 'No' }
+            ].map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleChoiceClick('clinicalAlignment', option.value)}
+                className={`px-4 py-2 rounded-md border-2 transition-colors ${
+                  ratings.clinicalAlignment === option.value
+                    ? 'bg-blue-500 border-blue-500 text-white'
+                    : 'border-gray-600 text-gray-400 hover:border-blue-400'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Heatmap Accuracy (Likert Scale) */}
+        <div className="text-center">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Did the heatmap correctly highlight suspicious regions?
+          </label>
+          <div className="flex gap-2 justify-center items-center">
+            <span className="text-xs text-gray-400">Strongly<br/>Disagree</span>
             {[1, 2, 3, 4, 5].map((value) => (
               <button
                 key={value}
-                onClick={() => handleRatingClick('classificationAccuracy', value)}
+                onClick={() => handleRatingClick('heatmapAccuracy', value)}
                 className={`w-10 h-10 rounded-md border-2 transition-colors ${
-                  ratings.classificationAccuracy >= value
+                  ratings.heatmapAccuracy >= value
                     ? 'bg-blue-500 border-blue-500 text-white'
                     : 'border-gray-600 text-gray-400 hover:border-blue-400'
                 }`}
@@ -120,26 +152,31 @@ export function RatingPopup({ isOpen, onClose, onSubmit }) {
                 {value}
               </button>
             ))}
+            <span className="text-xs text-gray-400">Strongly<br/>Agree</span>
           </div>
         </div>
 
-        {/* Localization Accuracy */}
+        {/* Diagnosis Reconsideration */}
         <div className="text-center">
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Localization Accuracy
+            Did the AI output cause you to reconsider your diagnosis?
           </label>
-          <div className="flex gap-2 justify-center">
-            {[1, 2, 3, 4, 5].map((value) => (
+          <div className="flex flex-col gap-2">
+            {[
+              { value: 'changed', label: 'Yes, it changed my mind' },
+              { value: 'confirmed', label: 'No, it confirmed my thought' },
+              { value: 'disagreed', label: 'No, I disagreed with it' }
+            ].map((option) => (
               <button
-                key={value}
-                onClick={() => handleRatingClick('localizationAccuracy', value)}
-                className={`w-10 h-10 rounded-md border-2 transition-colors ${
-                  ratings.localizationAccuracy >= value
+                key={option.value}
+                onClick={() => handleChoiceClick('diagnosisReconsideration', option.value)}
+                className={`px-4 py-2 rounded-md border-2 transition-colors text-sm ${
+                  ratings.diagnosisReconsideration === option.value
                     ? 'bg-blue-500 border-blue-500 text-white'
                     : 'border-gray-600 text-gray-400 hover:border-blue-400'
                 }`}
               >
-                {value}
+                {option.label}
               </button>
             ))}
           </div>
@@ -172,21 +209,25 @@ export function RatingPopup({ isOpen, onClose, onSubmit }) {
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Suggestions/Feedback
           </label>
-          <textarea
-            value={ratings.feedback}
-            onChange={handleFeedbackChange}
-            placeholder="Share your thoughts..."
-            rows={3}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
-          />
+          <div className="flex justify-center">
+            <textarea
+              value={ratings.feedback}
+              onChange={handleFeedbackChange}
+              placeholder="Share your thoughts..."
+              rows={4}
+              className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+              style={{ width: '100%' }}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="px-6 pb-6">
+      <div className="px-6 pb-6 flex justify-center">
         <button
           onClick={handleSubmit}
-          disabled={!ratings.classificationAccuracy || !ratings.localizationAccuracy || !ratings.easeOfUse}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+          disabled={!ratings.clinicalAlignment || !ratings.heatmapAccuracy || !ratings.diagnosisReconsideration || !ratings.easeOfUse}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+          style={{ width: '100%' }}
         >
           Submit
         </button>
