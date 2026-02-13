@@ -1,10 +1,9 @@
 # 🫁 Lung Nodule Detection System
 
-An AI-powered web application for detecting lung nodules in chest X-ray images using deep learning. This system provides automated classification with confidence scores and optional spatial attention heatmaps to visualize nodule locations.
+An AI-powered web application for detecting lung nodules in chest X-ray images using deep learning. This system provides automated classification with confidence scores and spatial attention heatmaps to visualize nodule locations.
 
 ## TODO
-- Add storage for `.mha` images.
-- Deploy the system on Vercel for web access.
+- Add cloud storage for `.mha` images.
 
 ---
 
@@ -25,8 +24,13 @@ npm install
 *This will install React, Vite, and all frontend libraries.*
 
 ### Step 3: Set Up Python Virtual Environment
-Create and activate a Python virtual environment for the backend:
 
+**Change directory to backend folder**
+```powershell
+cd backend
+```
+
+Create and activate a Python virtual environment for the backend:
 **For Windows (PowerShell):**
 ```powershell
 python -m venv .venv

@@ -5,24 +5,39 @@ import torch
 import torch.nn.functional as F
 import timm
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image
 import SimpleITK as sitk
 from torchvision import transforms
 from collections import OrderedDict
 import cv2
 
+# --- NEW IMPORTS FOR NODE21 PREPROCESSING ---
+import opencxr
+from opencxr.utils.file_io import read_file
+
 from wsod_model import WSODModel
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 MODEL_PATH = "best_wsod_resnet50.pth"
-# MODEL_PATH = "resnet50-baseline-nodule.pth"
 CLASS_NAMES = ["No Nodule", "Nodule Detected"]
 
 # ============================================================
-# LOAD MODEL (only once)
+# LOAD PREPROCESSING ALGORITHM (NODE21 STANDARD)
 # ============================================================
-print("Loading model...")
-# model = timm.create_model("resnet50", pretrained=False, num_classes=2)
+print("Loading NODE21 preprocessing algorithm (opencxr)...")
+try:
+    # Load the standardization algorithm once
+    cxr_std_algorithm = opencxr.load(opencxr.algorithms.cxr_standardize)
+    print("Preprocessing algorithm loaded.")
+except Exception as e:
+    print(f"Error loading opencxr: {e}")
+    print("Ensure you have installed opencxr: pip install opencxr")
+    raise e
+
+# ============================================================
+# LOAD MODEL
+# ============================================================
+print("Loading classification model...")
 base_model = timm.create_model('resnet50', pretrained=False, num_classes=2)
 model = WSODModel(base_model, num_classes=2)
 
@@ -46,129 +61,151 @@ model.eval()
 print("Model loaded successfully.")
 
 # ============================================================
-# HELPER FUNCTION
+# HELPER FUNCTIONS
 # ============================================================
-def mha_to_base64_png(image_path):
-    """Convert image to base64-encoded PNG data URL for browser display."""
-    # Handle both .mha and regular image formats
-    if image_path.lower().endswith('.mha'):
-        image = sitk.ReadImage(image_path)
-        img_array = sitk.GetArrayFromImage(image)
-        
-        # Take first slice if 3D
-        if len(img_array.shape) == 3:
-            img_array = img_array[0]
-        
-        # Normalize to 0-255
-        img_array = img_array.astype(np.float32)
-        img_min, img_max = img_array.min(), img_array.max()
-        if img_max > img_min:
-            img_array = ((img_array - img_min) / (img_max - img_min) * 255).astype(np.uint8)
-        else:
-            img_array = np.zeros_like(img_array, dtype=np.uint8)
-        
-        pil_img = Image.fromarray(img_array, mode='L')
-    else:
-        # Handle standard image formats (PNG, JPG, etc.)
-        pil_img = Image.open(image_path).convert('L')
+
+def preprocess_node21_style(image_path):
+    """
+    Applies NODE21 standardization and fixes orientation issues.
+    For .mha/.mhd files (already preprocessed), just read them.
+    For other formats, apply full preprocessing pipeline.
     
-    # Convert to PNG bytes (preserving original dimensions)
+    This handles the domain shift problem:
+    - NODE21 .mha files are already preprocessed (cropped, normalized, 1024x1024)
+    - Other formats (DICOM, PNG, JPG, etc.) need preprocessing to match training data
+    """
+    file_extension = os.path.splitext(image_path)[1].lower()
+    
+    if file_extension in ['.mha', '.mhd']:
+        # Already preprocessed - use opencxr to read
+        img_np, spacing, _ = read_file(image_path)
+        std_img = img_np
+        std_img = np.rot90(std_img, k=-1)
+        
+    elif file_extension in ['.dcm', '.dicom']:
+        # DICOM files - opencxr can handle these
+        img_np, spacing, _ = read_file(image_path)
+        std_img, new_spacing, size_changes = cxr_std_algorithm.run(img_np, spacing)
+        
+    elif file_extension in ['.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff']:
+        # Image files - read with PIL, then preprocess
+        img_pil = Image.open(image_path).convert('L')
+        img_np = np.array(img_pil)
+        spacing = (0.143, 0.143)
+        
+        try:
+            std_img, new_spacing, size_changes = cxr_std_algorithm.run(img_np, spacing)
+        except Exception as preproc_error:
+            # Fallback: simple resize
+            img_pil_resized = img_pil.resize((1024, 1024), Image.Resampling.LANCZOS)
+            std_img = np.array(img_pil_resized)
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}. "
+                       f"Supported formats: .mha, .mhd, .dcm, .jpg, .jpeg, .png, .bmp, .tif, .tiff")
+    
+    return std_img
+
+def generate_preview(image_path):
+    """
+    Generate a preview image for any supported file type.
+    This is called when a file is uploaded, before classification.
+    """
+    try:
+        file_extension = os.path.splitext(image_path)[1].lower()
+        
+        if file_extension in ['.mha', '.mhd', '.dcm', '.dicom']:
+            # For medical imaging formats, preprocess and return as base64
+            std_img_np = preprocess_node21_style(image_path)
+            return numpy_to_base64(std_img_np)
+        else:
+            # For regular images (jpg, png, etc), just read and convert
+            img_pil = Image.open(image_path).convert('L')
+            img_np = np.array(img_pil)
+            return numpy_to_base64(img_np)
+    except Exception as e:
+        print(f"Preview generation failed: {str(e)}")
+        return None
+
+def numpy_to_base64(img_np):
+    """Convert numpy array (standardized image) to base64 PNG."""
+    # Ensure image is in 0-255 uint8 format
+    img_array = img_np.astype(np.float32)
+    img_min, img_max = img_array.min(), img_array.max()
+    
+    if img_max > img_min:
+        img_array = ((img_array - img_min) / (img_max - img_min) * 255).astype(np.uint8)
+    else:
+        img_array = img_array.astype(np.uint8)
+        
+    pil_img = Image.fromarray(img_array, mode='L')
+    
     buf = io.BytesIO()
     pil_img.save(buf, format='PNG')
     buf.seek(0)
     
-    # Encode to base64
     img_base64 = base64.b64encode(buf.getvalue()).decode('ascii')
     return f"data:image/png;base64,{img_base64}"
 
-
-def load_mha_image(image_path):
-    """Load and preprocess image into a tensor (maintains aspect ratio internally)."""
-    # Handle both .mha and regular image formats
-    if image_path.lower().endswith('.mha'):
-        image = sitk.ReadImage(image_path)
-        img_array = sitk.GetArrayFromImage(image)
-
-        if len(img_array.shape) == 3:
-            img_array = img_array[0]
-
-        img_array = img_array.astype(np.float32)
-        img_min, img_max = img_array.min(), img_array.max()
-        if img_max > img_min:
-            img_array = ((img_array - img_min) / (img_max - img_min) * 255).astype(np.uint8)
-        else:
-            img_array = np.zeros_like(img_array, dtype=np.uint8)
-
-        img_array = np.stack([img_array, img_array, img_array], axis=-1)
-        image = Image.fromarray(img_array)
+def prepare_tensor_for_model(std_img_np):
+    """
+    Convert the standardized numpy image to a tensor compatible with ResNet50.
+    """
+    # Ensure uint8 for PIL
+    img_array = std_img_np.astype(np.float32)
+    img_min, img_max = img_array.min(), img_array.max()
+    if img_max > img_min:
+        img_array = ((img_array - img_min) / (img_max - img_min) * 255).astype(np.uint8)
     else:
-        # Handle standard image formats
-        image = Image.open(image_path).convert('RGB')
+        img_array = img_array.astype(np.uint8)
 
+    # Convert to RGB (ResNet expects 3 channels)
+    # Even though it's grayscale, we replicate channels
+    img_pil = Image.fromarray(img_array).convert('RGB')
+
+    # Standard ImageNet transforms required by the model
     transform = transforms.Compose([
-        transforms.Resize((224, 224)),  # Model requires 224x224
+        transforms.Resize((224, 224)),  # Resize the 1024x1024 crop to model input
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225]),
     ])
-    return transform(image).unsqueeze(0)
-
-
-def generate_heatmap_overlay(image_path, attention_map):
-    """
-    Generate heatmap overlay on the original image.
     
-    Args:
-        image_path: Path to the original image
-        attention_map: 2D numpy array (HxW) with attention values [0-1]
-    
-    Returns:
-        Base64 encoded PNG with heatmap overlay
+    return transform(img_pil).unsqueeze(0)
+
+def generate_heatmap_overlay_from_data(img_np, attention_map):
     """
-    # Load original image (handle both .mha and standard formats)
-    if image_path.lower().endswith('.mha'):
-        image = sitk.ReadImage(image_path)
-        img_array = sitk.GetArrayFromImage(image)
-        
-        if len(img_array.shape) == 3:
-            img_array = img_array[0]
-        
-        # Normalize original image to 0-255
-        img_array = img_array.astype(np.float32)
-        img_min, img_max = img_array.min(), img_array.max()
-        if img_max > img_min:
-            img_array = ((img_array - img_min) / (img_max - img_min) * 255).astype(np.uint8)
-        else:
-            img_array = np.zeros_like(img_array, dtype=np.uint8)
-        
-        # Convert grayscale to RGB
-        img_rgb = cv2.cvtColor(img_array, cv2.COLOR_GRAY2RGB)
+    Generate heatmap overlay using the standardized image data directly.
+    """
+    # Normalize image to 0-255 uint8
+    img_array = img_np.astype(np.float32)
+    img_min, img_max = img_array.min(), img_array.max()
+    if img_max > img_min:
+        img_array = ((img_array - img_min) / (img_max - img_min) * 255).astype(np.uint8)
     else:
-        # Handle standard image formats
-        pil_img = Image.open(image_path).convert('RGB')
-        img_rgb = np.array(pil_img)
+        img_array = img_array.astype(np.uint8)
+        
+    # Convert grayscale to RGB for overlay
+    img_rgb = cv2.cvtColor(img_array, cv2.COLOR_GRAY2RGB)
     
-    # Get original dimensions
+    # Get dimensions of the preprocessed image
     original_height, original_width = img_rgb.shape[:2]
     
-    # Resize attention map to match original image size (not 224x224)
+    # Resize attention map to match the preprocessed image size
     attention_resized = cv2.resize(attention_map, (original_width, original_height), 
                                    interpolation=cv2.INTER_LINEAR)
     
     # Normalize attention to 0-255
     attention_norm = (attention_resized * 255).astype(np.uint8)
     
-    # Apply colormap (JET: blue=low, red=high attention)
+    # Apply colormap
     heatmap = cv2.applyColorMap(attention_norm, cv2.COLORMAP_JET)
     heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
     
-    # Blend original image with heatmap (60% original, 40% heatmap for visibility)
+    # Blend
     overlay = cv2.addWeighted(img_rgb, 0.6, heatmap, 0.4, 0)
     
-    # Convert to PIL Image
+    # Convert to base64
     pil_img = Image.fromarray(overlay)
-    
-    # Save to base64
     buf = io.BytesIO()
     pil_img.save(buf, format='PNG')
     buf.seek(0)
@@ -176,36 +213,22 @@ def generate_heatmap_overlay(image_path, attention_map):
     
     return f"data:image/png;base64,{img_base64}"
 
-
 def get_attention_from_model(model, img_tensor):
-    """
-    Extract attention map from WSODModel.
-    
-    Args:
-        model: WSODModel instance
-        img_tensor: Input tensor (1, 3, 224, 224)
-    
-    Returns:
-        2D numpy array with normalized attention values [0-1]
-    """
+    """Extract attention map from WSODModel."""
     if not hasattr(model, 'get_attention_map'):
         # Fallback: use feature maps from layer4
         features = img_tensor
         for name, module in model.base_model.named_children():
             features = module(features)
             if name == 'layer4':
-                # Average across channels to get spatial attention
                 attention = features.mean(dim=1, keepdim=True)
                 attention = F.relu(attention)
                 break
     else:
-        # Use model's built-in attention method
         attention = model.get_attention_map(img_tensor)
     
-    # Convert to numpy and normalize
     attention_np = attention.detach().cpu().squeeze().numpy()
     
-    # Normalize to [0, 1]
     att_min, att_max = attention_np.min(), attention_np.max()
     if att_max > att_min:
         attention_np = (attention_np - att_min) / (att_max - att_min)
@@ -214,30 +237,43 @@ def get_attention_from_model(model, img_tensor):
     
     return attention_np
 
-
 def predict_image(image_path):
-    """Run model prediction and return class + confidence + heatmap."""
-    img_tensor = load_mha_image(image_path).to(DEVICE)
+    """Run model prediction with NODE21 preprocessing."""
     
-    with torch.no_grad():
-        outputs = model(img_tensor)
-        probs = torch.softmax(outputs, dim=1)
-        pred_class = torch.argmax(probs, dim=1).item()
-        confidence = probs[0][pred_class].item()
-        
-        # Generate attention map for heatmap visualization
-        attention_map = get_attention_from_model(model, img_tensor)
+    # 1. PREPROCESSING (Domain Shift Fix)
+    try:
+        std_img_np = preprocess_node21_style(image_path)
+    except Exception as e:
+        return {"error": f"Preprocessing failed: {str(e)}"}
+
+    # 2. PREPARE TENSOR
+    try:
+        img_tensor = prepare_tensor_for_model(std_img_np).to(DEVICE)
+    except Exception as e:
+        return {"error": f"Tensor preparation failed: {str(e)}"}
     
-    # Convert MHA to base64 PNG for browser display (original)
-    preview_image = mha_to_base64_png(image_path)
+    # 3. INFERENCE
+    try:
+        with torch.no_grad():
+            outputs = model(img_tensor)
+            probs = torch.softmax(outputs, dim=1)
+            pred_class = torch.argmax(probs, dim=1).item()
+            confidence = probs[0][pred_class].item()
+            attention_map = get_attention_from_model(model, img_tensor)
+    except Exception as e:
+        return {"error": f"Model inference failed: {str(e)}"}
     
-    # Generate heatmap overlay image
-    heatmap_image = generate_heatmap_overlay(image_path, attention_map)
+    # 4. VISUALIZATION
+    try:
+        preview_image = numpy_to_base64(std_img_np)
+        heatmap_image = generate_heatmap_overlay_from_data(std_img_np, attention_map)
+    except Exception as e:
+        return {"error": f"Visualization failed: {str(e)}"}
     
     return {
         "prediction": CLASS_NAMES[pred_class],
         "confidence": round(confidence, 4),
-        "preview_image": heatmap_image,  # Show heatmap as the main preview
-        "original_image": preview_image,  # Keep original for reference
+        "preview_image": heatmap_image, 
+        "original_image": preview_image,
         "has_heatmap": True
     }

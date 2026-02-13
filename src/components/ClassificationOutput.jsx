@@ -121,11 +121,11 @@ export function ClassificationOutput({
   return (
     <div className="w-full h-full flex gap-4">
       {/* Left Sidebar - Controls and Info - Scrollable */}
-      <div className="w-72 flex-shrink-0 overflow-y-auto overflow-x-hidden space-y-3 pr-2" style={{ maxHeight: '100%' }}>
+      <div className="w-72 shrink-0 overflow-y-auto overflow-x-hidden space-y-3 pr-2" style={{ maxHeight: '100%' }}>
         
         {/* Classification Results - Only show after classification */}
         {prediction && (
-          <div className="p-3 bg-gradient-to-b from-[#1E3A8A] via-[#1F2937] to-[#111827] rounded-lg border border-[#374151]">
+          <div className="p-3 bg-linear-to-b from-[#1E3A8A] via-[#1F2937] to-[#111827] rounded-lg border border-[#374151]">
             <div className="space-y-3">
               {/* Prediction */}
               <div>
