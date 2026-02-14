@@ -211,15 +211,15 @@ export function UploadSection({
           )}
 
           <div className="flex gap-2">
-            <Button className="flex-1 bg-[#0EA5E9] hover:bg-[#0d96d4] h-8 text-xs" onClick={openFileDialog}>
+            <Button className="btn-choosefile cursor-pointer flex-1 bg-[#0EA5E9] hover:bg-[#0d96d4] h-8 text-xs" onClick={openFileDialog}>
               <Upload className="mr-1 h-3 w-3" /> Local
             </Button>
-            <Button className="flex-1 bg-[#0038c6] hover:bg-[#002a94] h-8 text-xs" onClick={() => setIsLibraryOpen(true)}>
+            <Button className="btn-choosefile cursor-pointer flex-1 bg-[#0038c6] hover:bg-[#002a94] h-8 text-xs" onClick={() => setIsLibraryOpen(true)}>
               <Cloud className="mr-1 h-3 w-3" /> Cloud
             </Button>
           </div>
 
-          <Button className="w-full bg-[#14B8A6] hover:bg-[#10A39B] h-8 text-xs" onClick={handleClassify} disabled={!selectedFile || loading}>
+          <Button className="w-full btn-classify cursor-pointer bg-[#14B8A6] hover:bg-[#10A39B] h-8 text-xs" onClick={handleClassify} disabled={!selectedFile || loading}>
             {loading ? "Analyzing..." : "Classify"}
           </Button>
 

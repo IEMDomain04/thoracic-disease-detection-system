@@ -25,6 +25,11 @@
   background-color: rgb(17, 175, 122);
 }
 
+.btn-classify:active {
+  transform: scale(0.80);
+  background-color: rgb(12, 129, 90);
+}
+
 .btn-controls:hover {
   transform: scale(1.05);
 }
