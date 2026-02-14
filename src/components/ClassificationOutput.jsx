@@ -8,27 +8,37 @@ export function ClassificationOutput({
   zoom,
   setZoom,
   position,
-  setPosition
+  setPosition,
+  showHeatmap
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const imageContainerRef = useRef(null);
 
-  const displayImage =
-    prediction?.preview_image ||
-    prediction?.original_image ||
-    imageSrc;
+  // --- FIXED DISPLAY LOGIC ---
+  let displayImage = imageSrc; // Default to the uploaded preview
+
+  if (prediction) {
+      if (showHeatmap && prediction.preview_image) {
+          // Case 1: User wants heatmap -> Show heatmap
+          displayImage = prediction.preview_image;
+      } else if (prediction.original_image) {
+          // Case 2: User wants original & backend sent it -> Show processed original
+          displayImage = prediction.original_image;
+      } else {
+          // Case 3: User wants original but backend didn't send distinct one -> Show upload preview
+          displayImage = imageSrc;
+      }
+  }
 
   useEffect(() => {
     const container = imageContainerRef.current;
     if (!container) return;
-
     const wheelHandler = (e) => {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -0.1 : 0.1;
       setZoom((prev) => Math.min(Math.max(0.5, prev + delta), 5));
     };
-
     container.addEventListener("wheel", wheelHandler, { passive: false });
     return () => container.removeEventListener("wheel", wheelHandler);
   }, [setZoom]);
@@ -41,10 +51,7 @@ export function ClassificationOutput({
 
   const handleMouseMove = (e) => {
     if (!isDragging) return;
-    setPosition({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y,
-    });
+    setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
   };
 
   const handleMouseUp = () => setIsDragging(false);
@@ -58,9 +65,7 @@ export function ClassificationOutput({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        style={{
-          cursor: isDragging ? "grabbing" : displayImage ? "grab" : "default"
-        }}
+        style={{ cursor: isDragging ? "grabbing" : displayImage ? "grab" : "default" }}
       >
         {displayImage ? (
           <img
@@ -75,10 +80,8 @@ export function ClassificationOutput({
           />
         ) : (
           <div className="text-center text-gray-400">
-            <ImageIcon size={80} className="mx-auto mb-3" />
-            <p className="text-lg font-medium text-white">
-              No image uploaded yet
-            </p>
+            <ImageIcon size={80} className="mx-auto mb-3 opacity-20" />
+            <p className="text-lg font-medium text-gray-500">No image uploaded yet</p>
           </div>
         )}
       </div>

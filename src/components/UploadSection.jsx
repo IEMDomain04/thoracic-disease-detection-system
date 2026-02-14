@@ -1,7 +1,7 @@
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { Upload, Cloud, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { Upload, Cloud, ZoomIn, ZoomOut, Maximize2, Eye, EyeOff } from "lucide-react";
 import { useRef, useState } from "react";
 import { CloudLibraryModal } from "./CloudLibraryModal";
 
@@ -19,29 +19,28 @@ export function UploadSection({
   setShowRatingPopup,
   zoom,
   setZoom,
-  handleResetView
+  handleResetView,
+  showHeatmap,
+  setShowHeatmap
 }) {
   const fileInputRef = useRef(null);
   const [error, setError] = useState(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
 
-  // =========================
-  // Prediction Logic (UI Helpers)
-  // =========================
+  // Prediction Logic
   const predictedClass = prediction?.prediction || prediction?.class || "--";
   const confidence = prediction?.confidence != null ? Number(prediction.confidence) : null;
   const confPercent = confidence != null ? (confidence > 1 ? confidence : confidence * 100).toFixed(2) : null;
-  
   const hasNodule = predictedClass.toLowerCase().includes("nodule") && !predictedClass.toLowerCase().includes("no nodule");
   const badgeColor = predictedClass === "--" ? "text-[#9CA3AF] border-[#9CA3AF]/50" : hasNodule ? "text-red-400 bg-red-400/10 border-red-400/50" : "text-green-400 bg-green-400/10 border-green-400/50";
   const progressBarColor = hasNodule ? "bg-red-400" : "bg-green-400";
+  
+  // Check if heatmap is available
+  const hasHeatmapData = prediction?.has_heatmap && prediction?.preview_image;
 
-  // =========================
-  // 1. Local File Handling
-  // =========================
+  // Local File
   const processLocalFile = async (file) => {
     if (!file) return;
-
     setSelectedFile(file);
     setPrediction(null);
     setError(null);
@@ -51,51 +50,29 @@ export function UploadSection({
       try {
         const formData = new FormData();
         formData.append("file", file);
-
-        const response = await fetch(`${API_BASE}/preview`, {
-          method: "POST",
-          body: formData,
-        });
-
+        const response = await fetch(`${API_BASE}/preview`, { method: "POST", body: formData });
         const result = await response.json();
-
-        if (result.preview_image) {
-          setPreviewUrl(result.preview_image);
-        } else {
-          setError("Could not generate preview.");
-        }
-      } catch (err) {
-        setError("Server preview failed.");
-      } finally {
-        setLoading(false);
-      }
+        if (result.preview_image) setPreviewUrl(result.preview_image);
+        else setError("Could not generate preview.");
+      } catch (err) { setError("Server preview failed."); } 
+      finally { setLoading(false); }
     } else {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      setPreviewUrl(URL.createObjectURL(file));
     }
   };
 
   const openFileDialog = () => fileInputRef.current?.click();
   const handleFileChange = (e) => { const file = e.target.files?.[0]; processLocalFile(file); };
 
-  // =========================
-  // 2. Cloud File Handling (THIS WAS MISSING)
-  // =========================
+  // Cloud File
   const handleLibrarySelect = async (caseItem) => {
     setIsLibraryOpen(false);
     setPrediction(null);
     setError(null);
     setPreviewUrl(null);
     
-    // Create special cloud file object
-    const cloudFileObj = { 
-        name: caseItem.title, 
-        googleDriveId: caseItem.googleDriveId, 
-        isCloud: true 
-    };
+    const cloudFileObj = { name: caseItem.title, googleDriveId: caseItem.googleDriveId, isCloud: true };
     setSelectedFile(cloudFileObj);
-
-    // Fetch Preview immediately
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE}/preview_from_library`, {
@@ -104,32 +81,22 @@ export function UploadSection({
         body: JSON.stringify({ file_id: caseItem.googleDriveId }),
       });
       const result = await response.json();
-      if (result.preview_image) {
-        setPreviewUrl(result.preview_image);
-      } else {
-        setError("Preview not available on server.");
-      }
-    } catch (err) {
-      console.error("Cloud preview failed", err);
-      setError("Could not load cloud preview.");
-    } finally {
-      setLoading(false);
-    }
+      if (result.preview_image) setPreviewUrl(result.preview_image);
+      else setError("Preview not available on server.");
+    } catch (err) { setError("Could not load cloud preview."); } 
+    finally { setLoading(false); }
   };
 
-  // =========================
-  // 3. Classification Handling
-  // =========================
+  // Classify
   const handleClassify = async () => {
     if (!selectedFile) return;
-
     setLoading(true);
     setError(null);
     setPrediction(null);
+    if (setShowHeatmap) setShowHeatmap(true); // Reset to Heatmap View
 
     try {
       let response;
-
       if (selectedFile.isCloud) {
         response = await fetch(`${API_BASE}/predict_from_library`, {
           method: "POST",
@@ -139,24 +106,23 @@ export function UploadSection({
       } else {
         const formData = new FormData();
         formData.append("file", selectedFile);
-        response = await fetch(`${API_BASE}/predict`, {
-          method: "POST",
-          body: formData,
-        });
+        response = await fetch(`${API_BASE}/predict`, { method: "POST", body: formData });
       }
 
       const result = await response.json();
       if (result.error) throw new Error(result.error);
 
       setPrediction(result);
-      if (result.preview_image) setPreviewUrl(result.preview_image);
+      
+      // 🔥 FIX: DO NOT OVERWRITE previewUrl IF IT ALREADY EXISTS
+      // Only set it if we somehow don't have a preview yet
+      if (!previewUrl && result.preview_image) {
+         setPreviewUrl(result.preview_image);
+      }
 
       if (setShowRatingPopup) setShowRatingPopup(true);
-    } catch (err) {
-      setError("Prediction failed.");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError("Prediction failed."); } 
+    finally { setLoading(false); }
   };
 
   return (
@@ -164,15 +130,13 @@ export function UploadSection({
       <Card className="bg-[#1F2937] border border-gray-700 shadow-none rounded-lg w-72 shrink-0 flex flex-col h-full">
         <CardContent className="space-y-3 p-3 flex-1 overflow-y-auto">
 
-          {/* Results Section (Moved inside upload section based on your previous UI needs) */}
+          {/* Results */}
           {prediction && (
             <div className="p-3 bg-gradient-to-b from-[#1E3A8A] via-[#1F2937] to-[#111827] rounded-lg border border-[#374151]">
               <div className="space-y-3">
                 <div>
                   <p className="text-xs text-[#9CA3AF] mb-1.5">Prediction:</p>
-                  <Badge variant="outline" className={`text-xs px-2 py-1 font-semibold ${badgeColor} w-full justify-center`}>
-                    {predictedClass}
-                  </Badge>
+                  <Badge variant="outline" className={`text-xs px-2 py-1 font-semibold ${badgeColor} w-full justify-center`}>{predictedClass}</Badge>
                 </div>
                 <div>
                   <p className="text-xs text-[#9CA3AF] mb-1.5">Confidence:</p>
@@ -187,41 +151,24 @@ export function UploadSection({
             </div>
           )}
 
-          {/* Status Banners */}
+          {/* Status */}
           {previewUrl && !prediction && !loading && (
             <div className="p-2 bg-[#0EA5E9]/10 border border-[#0EA5E9]/30 rounded-lg">
               <p className="text-xs text-[#38BDF8] text-center leading-relaxed">📷 <strong>Preview Mode</strong><br />Click Classify to analyze</p>
             </div>
           )}
-          {loading && (
-            <div className="p-2 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg">
-              <p className="text-xs text-[#F59E0B] text-center leading-relaxed">⏳ <strong>Processing...</strong><br />{prediction ? "Analyzing" : "Loading preview"}</p>
-            </div>
-          )}
+          {loading && <div className="p-2 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg"><p className="text-xs text-[#F59E0B] text-center leading-relaxed">⏳ <strong>Processing...</strong><br />{prediction ? "Analyzing" : "Loading preview"}</p></div>}
 
           <h3 className="text-xs font-semibold text-[#E5E7EB] mt-2">Upload & Controls</h3>
-
           <input className="hidden" ref={fileInputRef} onChange={handleFileChange} type="file" accept=".jpg,.jpeg,.png,.mha" />
-
-          {selectedFile && (
-            <div className="p-1.5 bg-[#111827] rounded border border-[#374151]">
-              <p className="text-[10px] text-[#9CA3AF]">Selected:</p>
-              <p className="text-xs text-[#E5E7EB] truncate font-medium">{selectedFile.name}</p>
-            </div>
-          )}
+          {selectedFile && <div className="p-1.5 bg-[#111827] rounded border border-[#374151]"><p className="text-[10px] text-[#9CA3AF]">Selected:</p><p className="text-xs text-[#E5E7EB] truncate font-medium">{selectedFile.name}</p></div>}
 
           <div className="flex gap-2">
-            <Button className="btn-choosefile cursor-pointer flex-1 bg-[#0EA5E9] hover:bg-[#0d96d4] h-8 text-xs" onClick={openFileDialog}>
-              <Upload className="mr-1 h-3 w-3" /> Local
-            </Button>
-            <Button className="btn-choosefile cursor-pointer flex-1 bg-[#0038c6] hover:bg-[#002a94] h-8 text-xs" onClick={() => setIsLibraryOpen(true)}>
-              <Cloud className="mr-1 h-3 w-3" /> Cloud
-            </Button>
+            <Button className="btn-choosefile cursor-pointer flex-1 bg-[#0EA5E9] hover:bg-[#0d96d4] h-8 text-xs" onClick={openFileDialog}><Upload className="mr-1 h-3 w-3" /> Local</Button>
+            <Button className="btn-choosefile cursor-pointer flex-1 bg-[#0038c6] hover:bg-[#002a94] h-8 text-xs" onClick={() => setIsLibraryOpen(true)}><Cloud className="mr-1 h-3 w-3" /> Cloud</Button>
           </div>
 
-          <Button className="w-full btn-classify cursor-pointer bg-[#14B8A6] hover:bg-[#10A39B] h-8 text-xs" onClick={handleClassify} disabled={!selectedFile || loading}>
-            {loading ? "Analyzing..." : "Classify"}
-          </Button>
+          <Button className="btn-classify cursor-pointer w-full bg-[#14B8A6] hover:bg-[#10A39B] h-8 text-xs" onClick={handleClassify} disabled={!selectedFile || loading}>{loading ? "Analyzing..." : "Classify"}</Button>
 
           {/* View Controls */}
           {previewUrl && (
@@ -268,22 +215,28 @@ export function UploadSection({
                   </span>
                 </span>
               </div>
+              
+              {/* Heatmap Toggle Button */}
+              {hasHeatmapData && (
+                <>
+                  <div className="h-px bg-[#374151] my-2"></div>
+                  <Button 
+                    onClick={() => setShowHeatmap(!showHeatmap)} 
+                    size="sm" 
+                    variant="outline" 
+                    className={`btn-controls w-full justify-start h-8 text-xs cursor-pointer ${showHeatmap ? 'bg-[#EF4444] border-[#EF4444] text-white hover:bg-[#DC2626]' : 'bg-[#10B981] border-[#10B981] text-white hover:bg-[#059669]'}`}
+                  >
+                    {showHeatmap ? <><EyeOff className="h-3 w-3 mr-1.5" /> Hide Heatmap</> : <><Eye className="h-3 w-3 mr-1.5" /> Show Heatmap</>}
+                  </Button>
+                </>
+              )}
+              <div className="pt-1.5 text-center"><span className="text-[10px] text-[#9CA3AF]">Zoom: <span className="font-semibold text-[#E5E7EB]">{Math.round(zoom * 100)}%</span></span></div>
             </div>
           )}
-
           {error && <p className="text-xs text-red-400 text-center">{error}</p>}
-
         </CardContent>
       </Card>
-
-      {/* CRITICAL FIX: 
-          Passed `handleLibrarySelect` to the `onSelect` prop.
-      */}
-      <CloudLibraryModal
-        isOpen={isLibraryOpen}
-        onClose={() => setIsLibraryOpen(false)}
-        onSelect={handleLibrarySelect} 
-      />
+      <CloudLibraryModal isOpen={isLibraryOpen} onClose={() => setIsLibraryOpen(false)} onSelect={handleLibrarySelect} />
     </>
   );
 }

@@ -11,9 +11,10 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [showRatingPopup, setShowRatingPopup] = useState(false);
 
-  // 🔥 SHARED ZOOM STATE
+  // 🔥 SHARED STATE FOR VIEW CONTROLS
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [showHeatmap, setShowHeatmap] = useState(true); // <--- Added this
 
   const handleResetView = () => {
     setZoom(1);
@@ -41,9 +42,12 @@ export default function App() {
             loading={loading}
             setLoading={setLoading}
             setShowRatingPopup={setShowRatingPopup}
+            // Pass View Controls
             zoom={zoom}
             setZoom={setZoom}
             handleResetView={handleResetView}
+            showHeatmap={showHeatmap}       // <--- Pass Down
+            setShowHeatmap={setShowHeatmap} // <--- Pass Down
           />
 
           <ClassificationOutput
@@ -54,6 +58,7 @@ export default function App() {
             setZoom={setZoom}
             position={position}
             setPosition={setPosition}
+            showHeatmap={showHeatmap}       // <--- Pass Down
           />
 
         </div>
